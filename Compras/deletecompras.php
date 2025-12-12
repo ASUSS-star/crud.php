@@ -1,36 +1,48 @@
 <?php
-// deletecompras.php
-include "config.php";
+include "../config.php"; // ← porque estás dentro de /Compras/
 
-if(!isset($_GET['id'])){ header("Location: readcompras.php"); exit; }
-$id=(int)$_GET['id'];
+if(!isset($_GET['id'])){
+    header("Location: readcompras.php");
+    exit;
+}
 
-try{
+$id = (int)$_GET['id'];
+
+try {
     $conn->beginTransaction();
 
-    // Detalles de la compra
-    $stmt=$conn->prepare("SELECT id_producto, cantidad FROM detalle_compra WHERE id_compra=:id");
-    $stmt->execute([':id'=>$id]);
-    $detalles=$stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Obtener detalles con los nombres correctos
+    $stmt = $conn->prepare("SELECT producto_id, cantidad FROM detalle_compra WHERE compra_id = :id");
+    $stmt->execute([':id' => $id]);
+    $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Restar stock
-    $stmtUpdate=$conn->prepare("UPDATE productos SET stock = stock - :cant WHERE id = :id");
-    foreach($detalles as $d){
-        $stmtUpdate->execute([':cant'=>$d['cantidad'], ':id'=>$d['id_producto']]);
+    $stmtUpdate = $conn->prepare("UPDATE productos SET stock = stock - :cant WHERE id = :idProducto");
+
+    foreach ($detalles as $d) {
+        $stmtUpdate->execute([
+            ':cant' => $d['cantidad'],
+            ':idProducto' => $d['producto_id']
+        ]);
     }
 
     // Eliminar detalles
-    $stmt=$conn->prepare("DELETE FROM detalle_compra WHERE id_compra=:id");
-    $stmt->execute([':id'=>$id]);
+    $stmt = $conn->prepare("DELETE FROM detalle_compra WHERE compra_id = :id");
+    $stmt->execute([':id' => $id]);
 
     // Eliminar compra
-    $stmt=$conn->prepare("DELETE FROM compras WHERE id=:id");
-    $stmt->execute([':id'=>$id]);
+    $stmt = $conn->prepare("DELETE FROM compras WHERE id = :id");
+    $stmt->execute([':id' => $id]);
 
     $conn->commit();
-    echo "<script>alert('Compra eliminada y stock restaurado'); window.location='readcompras.php';</script>";
-}catch(Exception $e){
-    if($conn->inTransaction()) $conn->rollBack();
-    echo "<div class='alert alert-danger'>Error: ".htmlspecialchars($e->getMessage())."</div>";
+
+    echo "<script>
+        alert('Compra eliminada correctamente y stock actualizado.');
+        window.location = 'readcompras.php';
+    </script>";
+
+} catch (Exception $e) {
+    if ($conn->inTransaction()) $conn->rollBack();
+    echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
 }
 ?>

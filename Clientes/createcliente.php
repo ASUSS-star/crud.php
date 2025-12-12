@@ -7,7 +7,11 @@ if ($_POST) {
 
     $imagen = $_FILES['imagen']['name'];
     $tmp = $_FILES['imagen']['tmp_name'];
-    if ($imagen != "") { move_uploaded_file($tmp, "imagen/".$imagen); }
+
+    // RUTA CORREGIDA
+    if ($imagen != "") {
+        move_uploaded_file($tmp, "../imagen/" . $imagen);
+    }
 
     $stmt = $conn->prepare("INSERT INTO clientes (nombre, email, telefono, direccion, imagen)
     VALUES (:nombre, :email, :telefono, :direccion, :imagen)");
